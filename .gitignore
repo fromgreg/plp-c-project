@@ -1,1 +1,42 @@
+# macOS
 .DS_Store
+
+# Build output
+build/
+*.o
+*.d
+*.a
+*.so
+*.dylib
+*.dSYM/
+*.out
+
+# Sanitizer / crash artifacts
+*.core
+core
+*.profraw
+*.profdata
+
+# Datasets (fetched by scripts/fetch_mnist.sh)
+data/
+*.gz
+*-ubyte
+
+# Saved model weights
+*.bin
+*.weights
+
+# Python (PyTorch comparison script)
+.venv/
+__pycache__/
+*.pyc
+
+# Editors / IDEs
+.idea/
+.vscode/
+*.swp
+*~
+
+# Local AI assistant files
+CLAUDE.md
+.claude/
