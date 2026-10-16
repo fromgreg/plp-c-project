@@ -17,6 +17,14 @@ core
 *.profraw
 *.profdata
 
+# LaTeX build files (proposal/)
+*.aux
+*.log
+*.toc
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+
 # Datasets (fetched by scripts/fetch_mnist.sh)
 data/
 *.gz
@@ -40,3 +48,6 @@ __pycache__/
 # Local AI assistant files
 CLAUDE.md
 .claude/
+
+# Private planning documents
+ROADMAP.md

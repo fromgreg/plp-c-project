@@ -1,0 +1,199 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage[margin=2.2cm]{geometry}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{longtable}
+\usepackage{enumitem}
+\usepackage[hidelinks]{hyperref}
+
+\setlist{nosep, leftmargin=*}
+\setlength{\parskip}{0.5em}
+\setlength{\parindent}{0pt}
+
+\newcommand{\code}[1]{\texttt{#1}}
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+
+\begin{document}
+
+\begin{center}
+  {\LARGE \textbf{cgrad}: A Minimal Neural Network Library\\[0.2em]
+  with Automatic Differentiation in C\par}
+  \vspace{0.8em}
+  {\large Gregory Frommelt\par}
+  \vspace{0.2em}
+  {\small Project Proposal \quad Programming Languages and
+  Paradigms \quad University of Zurich, Fall 2026\par}
+\end{center}
+
+\section{Project Description}
+
+\textbf{cgrad} is a small, self-contained library for building and training
+feed-forward neural networks, written from scratch in C. It uses only the C
+standard library and \code{libm}, with no machine-learning or linear-algebra
+libraries. At its core is a tensor type and a computational graph that is built
+dynamically during the forward pass. A reverse-mode automatic differentiation
+engine traverses this graph backwards to compute gradients. On top of it, the
+library provides common differentiable operations, simple network layers and a
+gradient-based optimiser.
+
+The library will be demonstrated end to end. First it learns small toy problems
+(e.g.\ XOR). Then it trains a multi-layer perceptron on a standard real-world
+benchmark (e.g.\ handwritten-digit classification on MNIST, with the dataset
+loaded directly from its binary file format).
+
+\section{Motivation: Why C?}
+
+\begin{itemize}
+  \item \textbf{Explicit lifetimes.} An autograd engine creates and discards
+    many graph nodes in every training iteration. In garbage-collected
+    languages this is invisible. In C, the lifetime and ownership of every node
+    has to be designed explicitly, which makes the core engineering problem of
+    such a system tangible.
+  \item \textbf{Control over memory and performance.} Numerical code depends
+    on contiguous memory, data layout and cache behaviour. C exposes all of
+    these directly, and it is the layer on which established numerical and ML
+    libraries are built.
+  \item \textbf{Polymorphism by hand.} Each operation needs its own backward
+    rule. In C this is built from structs and function pointers, which shows
+    how dynamic dispatch works beneath object-oriented abstractions.
+  \item \textbf{No hidden runtime.} Every allocation and every computation is
+    explicit. This makes the system easy to reason about, to measure and to
+    compare with high-level frameworks.
+\end{itemize}
+
+\section{Key Language Features}
+
+The project will likely rely on the following C features:
+
+{\small
+\begin{longtable}{@{}L{0.27\textwidth} L{0.33\textwidth} L{0.34\textwidth}@{}}
+\toprule
+\textbf{Feature} & \textbf{Why} & \textbf{How} \\
+\midrule
+\endhead
+Structs, \code{typedef}, \code{enum}
+  & Model the core abstractions
+  & Tensors, graph nodes, layers, optimiser state \\
+Pointers, pointers to pointers
+  & Represent graph edges and collections
+  & Links from a node to its inputs; lists of nodes and parameters \\
+Dynamic memory (\code{malloc}/\code{free})
+  & Graphs are built and destroyed at run time
+  & Explicit ownership rules for long-lived and per-iteration objects \\
+Function pointers
+  & Per-operation gradient rules
+  & Each node stores the backward function of the operation that created it \\
+\code{void *}
+  & Operation-specific saved state
+  & Generic context attached to graph nodes \\
+Headers, \code{static}, opaque types
+  & Encapsulation without classes
+  & Small modules with clear public interfaces and private internals \\
+Preprocessor
+  & Build configuration and testing
+  & Header guards, debug/release switches, assertion macros for tests \\
+Binary I/O, fixed-width integers
+  & Read datasets and possibly store models
+  & Parsing binary file formats in a portable way \\
+\bottomrule
+\end{longtable}
+}
+
+\section{System Architecture}
+
+The library will be split into a few loosely coupled modules, roughly:
+
+\begin{itemize}
+  \item \textbf{Tensor core}: a two-dimensional ($n \times m$) numeric container with its data,
+    gradient storage and basic utilities.
+  \item \textbf{Autodiff engine}: records the computational graph, orders it
+    topologically and runs the backward pass.
+  \item \textbf{Operations}: differentiable building blocks such as arithmetic,
+    matrix multiplication, activation functions and loss functions, each with
+    a forward and a backward rule.
+  \item \textbf{Network layers}: e.g.\ fully connected layers composed into a
+    multi-layer perceptron.
+  \item \textbf{Optimisation}: parameter updates based on the computed
+    gradients.
+  \item \textbf{Data handling}: dataset loading, batching and shuffling.
+\end{itemize}
+
+\textbf{Memory strategy.} Objects fall into two lifetimes. Model parameters
+persist across the whole training run. Intermediate results of the forward pass
+live for a single iteration and are released together after each update step.
+Clear ownership rules decide which component allocates and which one frees each
+kind of object.
+
+\textbf{Tooling.} The project uses C11 and a plain \code{Makefile} with strict
+compiler warnings, a small hand-written test suite, and runtime checks for
+memory errors and undefined behaviour (sanitizers and leak detection).
+
+\section{Scope}
+
+\textbf{Core (must-haves)}
+\begin{itemize}
+  \item Tensor type with a dynamically built computational graph
+  \item Reverse-mode automatic differentiation
+  \item A set of common differentiable operations (arithmetic, matrix
+    operations, activations, losses)
+  \item A multi-layer perceptron and at least one gradient-based optimiser
+  \item Verification of the computed gradients (e.g.\ against numerical
+    approximations)
+  \item Training on a toy problem and on a real dataset
+\end{itemize}
+
+\textbf{Possible extensions (chosen depending on progress)}
+\begin{itemize}
+  \item Additional optimisers
+  \item Custom memory management for graph nodes (e.g.\ arena or pool allocation)
+  \item Performance work (e.g.\ cache-aware kernels, multi-threading)
+  \item Saving and loading trained models
+  \item Comparison with an established framework in accuracy and speed
+\end{itemize}
+
+\textbf{Out of scope}
+\begin{itemize}
+  \item GPU support
+  \item Convolutional or recurrent architectures; tensors beyond two dimensions
+  \item General-purpose broadcasting
+  \item Bindings to other languages
+\end{itemize}
+
+\section{Challenges and Mitigation}
+
+{\small
+\begin{longtable}{@{}L{0.27\textwidth} L{0.33\textwidth} L{0.34\textwidth}@{}}
+\toprule
+\textbf{Challenge} & \textbf{Mitigation} & \textbf{Scope fallback} \\
+\midrule
+\endhead
+Memory management of the graph
+  & Ownership rules defined up front; sanitizers and leak checks from the start
+  & Keep the simplest working allocation strategy \\
+Correctness of gradients
+  & Numerical gradient checks for every operation
+  & Reduce the set of supported operations \\
+Numerical stability
+  & Numerically stable formulations of critical functions (e.g.\ softmax and
+    logarithms)
+  & Restrict to well-behaved operations \\
+Training performance
+  & Mini-batching, optimised builds, attention to memory layout
+  & Train on a subset of the data or a smaller model \\
+Learning curve of C
+  & Incremental development, small test-covered steps
+  & Drop optional extensions first \\
+\bottomrule
+\end{longtable}
+}
+
+Core functionality comes first. Extensions are only started once the core
+works end to end, so the project stays deliverable even if parts take longer
+than expected.
+
+\end{document}
