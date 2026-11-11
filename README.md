@@ -2,7 +2,7 @@
 
 A tiny neural network library with reverse-mode automatic differentiation, written from scratch in C11.
 
-> **Status: planning.** This repository is the development repo for my course project in *Programming Languages and Paradigms* (University of Zurich, Fall 2026). No implementation exists yet. The full plan, schedule and scope live in [`ROADMAP.md`](ROADMAP.md).
+> **Status: planning.** This repository is the development repo for my course project in *Programming Languages and Paradigms* (University of Zurich, Fall 2026). No implementation exists yet. The submitted project proposal is in [`proposal/`](proposal/) ([PDF](proposal/project-proposal_gregory-frommelt_c.pdf), [LaTeX source](proposal/project.tex)).
 
 ## Goal
 
@@ -35,4 +35,4 @@ Setup, build and run instructions will be added here as the implementation progr
 
 ## License
 
-To be added (planned: MIT).
+Released under the [MIT License](LICENSE).
