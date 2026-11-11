@@ -2,7 +2,7 @@
 
 A tiny neural network library with reverse-mode automatic differentiation, written from scratch in C11.
 
-> **Status: planning.** This repository is the development repo for my course project in *Programming Languages and Paradigms* (University of Zurich, Fall 2026). The submitted project proposal is in [`proposal/`](proposal/) ([PDF](proposal/project-proposal_gregory-frommelt_c.pdf), [LaTeX source](proposal/project.tex)).
+> This repository is the development repo for my course project in *Programming Languages and Paradigms* (University of Zurich, Fall 2026). The submitted project proposal is in [`proposal/`](proposal/) ([PDF](proposal/project-proposal_gregory-frommelt_c.pdf), [LaTeX source](proposal/project.tex)).
 
 ## Goal
 
@@ -24,14 +24,6 @@ A from-scratch, proof-of-concept deep-learning engine in plain C. It uses only t
 - Checks: `-fsanitize=address,undefined` and `leaks --atExit`
 
 Setup, build and run instructions will be added here as the implementation progresses.
-
-## Milestones
-
-| Date | Milestone |
-|---|---|
-| Oct 18, 2026 | Project proposal submitted |
-| Nov 22, 2026 | Implementation complete |
-| Dec 2 / 9, 2026 | 5-minute live demo |
 
 ## License
 
