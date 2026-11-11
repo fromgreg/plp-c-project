@@ -1,0 +1,30 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  build-and-test:
+    runs-on: macos-latest   # Apple Silicon + Apple clang, same as the dev machine
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Toolchain versions
+        run: |
+          clang --version
+          make --version | head -n 1
+
+      - name: Debug build (-Werror)
+        run: make debug
+
+      - name: Tests (debug)
+        run: make test
+
+      - name: Tests (AddressSanitizer + UBSan)
+        run: make MODE=sanitize test
+
+      - name: Leak check (macOS leaks)
+        run: make leaks
