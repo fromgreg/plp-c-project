@@ -15,7 +15,9 @@ BUILD := build/$(MODE)
 
 # ---- flags ------------------------------------------------------------------
 CSTD     := -std=c11
-WARN     := -Wall -Wextra -Wpedantic -Wshadow
+# -Wconversion: flag implicit conversions that can change a value
+# (e.g. size_t -> int, double -> int, integer -> double with lost precision).
+WARN     := -Wall -Wextra -Wpedantic -Wshadow -Wconversion
 CPPFLAGS := -Isrc
 # Emit a .d file per object listing the headers it includes.
 DEPFLAGS := -MMD -MP
