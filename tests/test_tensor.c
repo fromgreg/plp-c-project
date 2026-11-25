@@ -1,4 +1,5 @@
-/* Tests for tensor: lifetime, fills, row-major access, printing, matmul. */
+/* Tests for tensor: lifetime, fills, row-major access, printing, matmul, and
+ * the classification helpers (logsumexp, softmax, argmax). */
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
@@ -238,6 +239,85 @@ static void copy_of_param_is_plain_leaf(void)
     tensor_free(c);
 }
 
+static void logsumexp_known_values(void)
+{
+    /* Row 0: three zeros -> log(1 + 1 + 1) = log 3.
+     * Row 1: [log 1, log 2, log 3] -> log(1 + 2 + 3) = log 6. */
+    Tensor *t = tensor_create(2, 3);
+    for (size_t c = 0; c < 3; c++)
+        tensor_set(t, 1, c, log((double)c + 1.0));
+
+    CHECK_NEAR(tensor_row_logsumexp(t, 0), log(3.0), 1e-12);
+    CHECK_NEAR(tensor_row_logsumexp(t, 1), log(6.0), 1e-12);
+    tensor_free(t);
+}
+
+static void logsumexp_extreme_values(void)
+{
+    /* The naive log(exp(1000) + exp(-1000)) is log(inf) = inf. The true value
+     * is 1000 + log(1 + exp(-2000)) = 1000 as a double. Same for -1000. */
+    double values[] = {1000, -1000, -1000, -1000};
+    Tensor *t = tensor_from_array(2, 2, values);
+
+    CHECK(isfinite(tensor_row_logsumexp(t, 0)));
+    CHECK_NEAR(tensor_row_logsumexp(t, 0), 1000.0, 1e-12);
+    CHECK_NEAR(tensor_row_logsumexp(t, 1), -1000.0 + log(2.0), 1e-12);
+    tensor_free(t);
+}
+
+static void softmax_rows_are_probabilities(void)
+{
+    /* Row 0: [log 1, log 2, log 3] -> [1/6, 2/6, 3/6].
+     * Row 1: all equal -> [1/3, 1/3, 1/3]. */
+    Tensor *logits = tensor_create(2, 3);
+    for (size_t c = 0; c < 3; c++) {
+        tensor_set(logits, 0, c, log((double)c + 1.0));
+        tensor_set(logits, 1, c, 5.0);
+    }
+    Tensor *p = tensor_softmax(logits);
+
+    CHECK(p->kind == TENSOR_LEAF); /* not part of a graph: caller frees */
+    CHECK(p->rows == 2 && p->cols == 3);
+    for (size_t c = 0; c < 3; c++) {
+        CHECK_NEAR(tensor_get(p, 0, c), ((double)c + 1.0) / 6.0, 1e-12);
+        CHECK_NEAR(tensor_get(p, 1, c), 1.0 / 3.0, 1e-12);
+    }
+    for (size_t r = 0; r < 2; r++) {
+        double sum = 0.0;
+        for (size_t c = 0; c < 3; c++)
+            sum += tensor_get(p, r, c);
+        CHECK_NEAR(sum, 1.0, 1e-12);
+    }
+    tensor_free(logits);
+    tensor_free(p);
+}
+
+static void softmax_extreme_values(void)
+{
+    double values[] = {1000, -1000};
+    Tensor *logits = tensor_from_array(1, 2, values);
+    Tensor *p = tensor_softmax(logits);
+
+    CHECK(isfinite(p->data[0]) && isfinite(p->data[1]));
+    CHECK(p->data[0] == 1.0);
+    CHECK(p->data[1] == 0.0); /* exp(-2000) underflows to exactly 0 */
+    tensor_free(logits);
+    tensor_free(p);
+}
+
+static void argmax_per_row(void)
+{
+    double values[] = {0.1, 0.7, 0.2,  /* largest in column 1 */
+                       -3, -5, -1,     /* largest in column 2, all negative */
+                       4, 4, 1};       /* tie: the first one wins */
+    Tensor *t = tensor_from_array(3, 3, values);
+
+    CHECK(tensor_argmax_row(t, 0) == 1);
+    CHECK(tensor_argmax_row(t, 1) == 2);
+    CHECK(tensor_argmax_row(t, 2) == 0);
+    tensor_free(t);
+}
+
 static const TestCase tests[] = {
     {"create_is_plain_leaf", create_is_plain_leaf},
     {"create_param_has_zeroed_grad", create_param_has_zeroed_grad},
@@ -255,6 +335,11 @@ static const TestCase tests[] = {
     {"matmul_row_times_column", matmul_row_times_column},
     {"fill_uniform_range", fill_uniform_range},
     {"fill_normal_statistics", fill_normal_statistics},
+    {"logsumexp_known_values", logsumexp_known_values},
+    {"logsumexp_extreme_values", logsumexp_extreme_values},
+    {"softmax_rows_are_probabilities", softmax_rows_are_probabilities},
+    {"softmax_extreme_values", softmax_extreme_values},
+    {"argmax_per_row", argmax_per_row},
 };
 
 const TestSuite tensor_suite = {"tensor", tests, ARRAY_LEN(tests)};

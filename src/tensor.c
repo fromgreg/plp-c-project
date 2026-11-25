@@ -1,5 +1,6 @@
 #include "tensor.h"
 
+#include <math.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -132,4 +133,52 @@ Tensor *tensor_matmul(const Tensor *a, const Tensor *b)
         }
     }
     return out;
+}
+
+double tensor_row_logsumexp(const Tensor *t, size_t row)
+{
+    assert(row < t->rows);
+    const double *z = &t->data[row * t->cols]; /* first element of the row */
+
+    double max = z[0];
+    for (size_t j = 1; j < t->cols; j++)
+        if (z[j] > max)
+            max = z[j];
+
+    /* log(sum(exp(z))) = max + log(sum(exp(z - max))).
+     * The naive left side overflows: exp(710) is already inf. On the right,
+     * every exponent is <= 0, so each term is in (0, 1]. The term of the
+     * maximum is exactly 1, so the sum is >= 1 and log never sees 0. */
+    double sum = 0.0;
+    for (size_t j = 0; j < t->cols; j++)
+        sum += exp(z[j] - max);
+    return max + log(sum);
+}
+
+Tensor *tensor_softmax(const Tensor *logits)
+{
+    Tensor *out = tensor_create(logits->rows, logits->cols);
+
+    for (size_t r = 0; r < logits->rows; r++) {
+        double lse = tensor_row_logsumexp(logits, r);
+        for (size_t c = 0; c < logits->cols; c++) {
+            size_t i = r * logits->cols + c;
+            /* exp(z) / sum(exp(z)), written as exp(z - log(sum(exp(z)))).
+             * z - lse is <= 0, so this exp cannot overflow either. */
+            out->data[i] = exp(logits->data[i] - lse);
+        }
+    }
+    return out;
+}
+
+size_t tensor_argmax_row(const Tensor *t, size_t row)
+{
+    assert(row < t->rows);
+    const double *z = &t->data[row * t->cols];
+
+    size_t best = 0;
+    for (size_t j = 1; j < t->cols; j++)
+        if (z[j] > z[best]) /* strictly greater: the first maximum wins */
+            best = j;
+    return best;
 }

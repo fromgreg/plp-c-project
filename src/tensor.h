@@ -120,4 +120,21 @@ void tensor_print(FILE *out, const Tensor *t, const char *name);
  * Forward computation only (no gradients). Aborts if a->cols != b->rows. */
 Tensor *tensor_matmul(const Tensor *a, const Tensor *b);
 
+/* ---- classification helpers (forward only, no gradients) ------------------- */
+
+/* log(sum over j of exp(t[row][j])), computed so that exp cannot overflow.
+ * Softmax and cross-entropy are both built on it:
+ *     softmax[j]          = exp(z[j] - logsumexp(z))
+ *     -log(softmax[j])    = logsumexp(z) - z[j] */
+double tensor_row_logsumexp(const Tensor *t, size_t row);
+
+/* Softmax of every row of logits: a new TENSOR_LEAF of the same shape whose
+ * rows are probabilities (positive, sum 1). Caller frees. For inference only;
+ * training uses ops_softmax_cross_entropy (ops.h). */
+Tensor *tensor_softmax(const Tensor *logits);
+
+/* Column index of the largest element of the given row: the predicted class
+ * of that sample. On a tie the first one wins. */
+size_t tensor_argmax_row(const Tensor *t, size_t row);
+
 #endif /* CGRAD_TENSOR_H */

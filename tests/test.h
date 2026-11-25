@@ -55,5 +55,6 @@ extern const TestSuite rng_suite;
 extern const TestSuite tensor_suite;
 extern const TestSuite ops_suite;
 extern const TestSuite autograd_suite;
+extern const TestSuite gradcheck_suite;
 
 #endif /* CGRAD_TEST_H */

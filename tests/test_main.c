@@ -17,6 +17,7 @@ static const TestSuite *const suites[] = {
     &tensor_suite,
     &ops_suite,
     &autograd_suite,
+    &gradcheck_suite,
 };
 
 /* Failures recorded by the test that is currently running. */
