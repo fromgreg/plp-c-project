@@ -53,5 +53,7 @@ void test_fail(const char *file, int line, const char *fmt, ...);
 extern const TestSuite util_suite;
 extern const TestSuite rng_suite;
 extern const TestSuite tensor_suite;
+extern const TestSuite ops_suite;
+extern const TestSuite autograd_suite;
 
 #endif /* CGRAD_TEST_H */

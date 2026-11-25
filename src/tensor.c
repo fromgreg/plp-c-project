@@ -6,7 +6,8 @@
 
 #include "util.h"
 
-Tensor *tensor_create(size_t rows, size_t cols)
+/* The one place that builds a tensor; the public constructors only pick the kind. */
+static Tensor *tensor_alloc(size_t rows, size_t cols, TensorKind kind)
 {
     if (rows == 0 || cols == 0)
         fatal("tensor_create: zero dimension (%zu x %zu)", rows, cols);
@@ -15,18 +16,41 @@ Tensor *tensor_create(size_t rows, size_t cols)
         fatal("tensor_create: %zu x %zu elements overflow size_t", rows, cols);
 
     Tensor *t = xmalloc(sizeof *t);
-    t->rows = rows;
-    t->cols = cols;
+    /* Designated initializer: every field that is not named here is set to
+     * zero, i.e. NULL pointers, n_parents 0 and visit_mark 0. */
+    *t = (Tensor){.rows = rows, .cols = cols, .kind = kind};
     /* calloc zero-fills; all-zero bits is 0.0 for IEEE 754 doubles. */
     t->data = xcalloc(rows * cols, sizeof *t->data);
+    /* Plain leaves (inputs, targets) never receive a gradient: save the memory. */
+    if (kind != TENSOR_LEAF)
+        t->grad = xcalloc(rows * cols, sizeof *t->grad);
     return t;
+}
+
+Tensor *tensor_create(size_t rows, size_t cols)
+{
+    return tensor_alloc(rows, cols, TENSOR_LEAF);
+}
+
+Tensor *tensor_create_param(size_t rows, size_t cols)
+{
+    return tensor_alloc(rows, cols, TENSOR_PARAM);
+}
+
+Tensor *tensor_create_intermediate(size_t rows, size_t cols)
+{
+    return tensor_alloc(rows, cols, TENSOR_INTERMEDIATE);
 }
 
 void tensor_free(Tensor *t)
 {
     if (t == NULL)
         return;
+    /* free(NULL) is a no-op, so grad and ctx need no checks. The parents are
+     * borrowed and must not be freed here. */
     free(t->data);
+    free(t->grad);
+    free(t->ctx);
     free(t);
 }
 
@@ -66,6 +90,15 @@ void tensor_fill_normal(Tensor *t, Rng *rng, double mean, double std)
     size_t n = tensor_size(t);
     for (size_t i = 0; i < n; i++)
         t->data[i] = rng_normal(rng, mean, std);
+}
+
+void tensor_zero_grad(Tensor *t)
+{
+    if (t->grad == NULL)
+        return;
+    size_t n = tensor_size(t);
+    for (size_t i = 0; i < n; i++)
+        t->grad[i] = 0.0;
 }
 
 void tensor_print(FILE *out, const Tensor *t, const char *name)

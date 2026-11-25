@@ -186,7 +186,63 @@ static void fill_normal_statistics(void)
     tensor_free(t);
 }
 
+static void create_is_plain_leaf(void)
+{
+    Tensor *t = tensor_create(2, 2);
+    CHECK(t->kind == TENSOR_LEAF);
+    CHECK(t->grad == NULL);
+    CHECK(t->n_parents == 0);
+    CHECK(t->parents[0] == NULL && t->parents[1] == NULL);
+    CHECK(t->backward == NULL);
+    CHECK(t->ctx == NULL);
+    tensor_free(t);
+}
+
+static void create_param_has_zeroed_grad(void)
+{
+    Tensor *p = tensor_create_param(2, 3);
+    CHECK(p->kind == TENSOR_PARAM);
+    CHECK(p->grad != NULL);
+    if (p->grad != NULL)
+        for (size_t i = 0; i < tensor_size(p); i++)
+            CHECK(p->grad[i] == 0.0);
+    CHECK(p->backward == NULL && p->n_parents == 0);
+    tensor_free(p);
+}
+
+static void zero_grad_clears_grad(void)
+{
+    Tensor *p = tensor_create_param(1, 3);
+    p->grad[0] = 1.5;
+    p->grad[2] = -4.0;
+    tensor_zero_grad(p);
+    CHECK(p->grad[0] == 0.0 && p->grad[1] == 0.0 && p->grad[2] == 0.0);
+
+    Tensor *leaf = tensor_create(1, 3);
+    tensor_zero_grad(leaf); /* no grad buffer: must be a no-op, not a crash */
+    CHECK(leaf->grad == NULL);
+
+    tensor_free(p);
+    tensor_free(leaf);
+}
+
+static void copy_of_param_is_plain_leaf(void)
+{
+    Tensor *p = tensor_create_param(1, 2);
+    p->data[1] = 7.0;
+    Tensor *c = tensor_copy(p);
+    CHECK(c->kind == TENSOR_LEAF);
+    CHECK(c->grad == NULL);
+    CHECK(c->data[1] == 7.0);
+    tensor_free(p);
+    tensor_free(c);
+}
+
 static const TestCase tests[] = {
+    {"create_is_plain_leaf", create_is_plain_leaf},
+    {"create_param_has_zeroed_grad", create_param_has_zeroed_grad},
+    {"zero_grad_clears_grad", zero_grad_clears_grad},
+    {"copy_of_param_is_plain_leaf", copy_of_param_is_plain_leaf},
     {"create_shape_and_zeroed", create_shape_and_zeroed},
     {"free_null_is_noop", free_null_is_noop},
     {"from_array_copies", from_array_copies},
