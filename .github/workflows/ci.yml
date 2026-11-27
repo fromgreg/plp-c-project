@@ -26,5 +26,10 @@ jobs:
       - name: Tests (AddressSanitizer + UBSan)
         run: make MODE=sanitize test
 
+      - name: XOR training (AddressSanitizer + UBSan)
+        run: |
+          make sanitize
+          ./build/sanitize/xor
+
       - name: Leak check (macOS leaks)
         run: make leaks

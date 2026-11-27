@@ -4,7 +4,7 @@
 #   make release|sanitize build everything in that mode
 #   make test             build + run the test runner (MODE=debug unless given)
 #   make MODE=sanitize test
-#   make leaks            run macOS `leaks` on the debug (non-ASan) test runner
+#   make leaks            run macOS `leaks` on the debug (non-ASan) test runner and XOR
 #   make check            debug tests, sanitizer tests, leaks, XOR under ASan
 #   make xor              build + run examples/xor.c in release mode
 #   make clean
@@ -92,6 +92,7 @@ test: $(TEST_BIN)
 leaks:
 	@$(MAKE) --no-print-directory MODE=debug all
 	leaks --atExit -- ./build/debug/test_runner
+	leaks --atExit -- ./build/debug/xor
 
 check:
 	@$(MAKE) --no-print-directory MODE=debug test

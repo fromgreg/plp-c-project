@@ -10,6 +10,8 @@
 #include <math.h>
 #include <stddef.h>
 
+#include "util.h" /* ARRAY_LEN, used for the test tables */
+
 typedef void (*TestFn)(void);
 
 typedef struct {
@@ -22,9 +24,6 @@ typedef struct {
     const TestCase *tests;
     size_t count;
 } TestSuite;
-
-/* Number of elements of a true array (not a pointer!). */
-#define ARRAY_LEN(a) (sizeof(a) / sizeof((a)[0]))
 
 /* Record a failure of the currently running test (defined in test_main.c). */
 void test_fail(const char *file, int line, const char *fmt, ...);
@@ -56,5 +55,7 @@ extern const TestSuite tensor_suite;
 extern const TestSuite ops_suite;
 extern const TestSuite autograd_suite;
 extern const TestSuite gradcheck_suite;
+extern const TestSuite nn_suite;
+extern const TestSuite optim_suite;
 
 #endif /* CGRAD_TEST_H */

@@ -4,6 +4,10 @@
 
 #include <stddef.h>
 
+/* Number of elements of a true array. Wrong for a pointer (and so for an
+ * array that was passed to a function): sizeof then measures the pointer. */
+#define ARRAY_LEN(a) (sizeof(a) / sizeof((a)[0]))
+
 /* Print "cgrad: fatal: <message>" to stderr and abort. printf-style format. */
 _Noreturn void fatal(const char *fmt, ...);
 
